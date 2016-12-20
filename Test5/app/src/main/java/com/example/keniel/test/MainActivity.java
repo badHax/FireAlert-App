@@ -10,6 +10,7 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.ContactsContract;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
@@ -25,8 +26,14 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import org.json.JSONObject;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import static com.example.keniel.test.R.id.textView;
 
@@ -41,6 +48,7 @@ public class MainActivity extends AppCompatActivity
     public static Double getY() {
         return y;
     }
+    ImageButton imageButton;
 
     public static void setY(Double y) {
         MainActivity.y = y;
@@ -105,7 +113,7 @@ public class MainActivity extends AppCompatActivity
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-
+        NetworkManager.getInstance(this);
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
@@ -115,12 +123,37 @@ public class MainActivity extends AppCompatActivity
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
-
+        imageButton = (ImageButton) findViewById(R.id.panic);
         textview = (TextView) findViewById(R.id.test);
 
         if(!runtime_permissions()){
             startTracking();
         }
+        imageButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Map<String, String> params = new HashMap();
+                params.put("content_type", "alert");
+                params.put("description", "PANIC!!!");
+                params.put("lat",MainActivity.getY().toString());
+                params.put("long",MainActivity.getX().toString());
+                JSONObject object = new JSONObject(params);
+
+                NetworkManager.getInstance().somePostRequestReturningString(object, new NetworkManager.SomeCustomListener<String>()
+                {
+                    @Override
+                    public void getResult(String result)
+                    {
+                        if (!result.isEmpty())
+                        {
+                            Toast.makeText(getApplicationContext(),"Your alert has been made and recieved",Toast.LENGTH_LONG).show();
+
+                            //do what you need with the result...
+                        }
+                    }
+                });
+            }
+        });
 
 
     }
@@ -198,23 +231,28 @@ public class MainActivity extends AppCompatActivity
         if (id == R.id.nav_camera) {
             // Handle the camera action
             fragment = new gmsFragment();
-            Bundle bundle = new Bundle();
-            bundle.putDouble("Latitude",getX());
-            bundle.putDouble("Longitude",getY());
-            fragment.setArguments(bundle);
             fm.beginTransaction().replace(R.id.relative_layout_for_fragment, fragment).commit();
+            imageButton.setVisibility(View.INVISIBLE);
         } else if (id == R.id.nav_gallery) {
             fragment = new ForumFragment();
             fm.beginTransaction().replace(R.id.relative_layout_for_fragment, fragment).commit();
+            imageButton.setVisibility(View.INVISIBLE);
 
         } else if (id == R.id.nav_slideshow) {
             fragment = new CameraFragment();
             fm.beginTransaction().replace(R.id.relative_layout_for_fragment, fragment).commit();
+            imageButton.setVisibility(View.INVISIBLE);
 
         } else if (id == R.id.nav_manage) {
-
+            fragment = new AudioFragment();
+            fm.beginTransaction().replace(R.id.relative_layout_for_fragment, fragment).commit();
+            imageButton.setVisibility(View.INVISIBLE);
         } else if (id == R.id.nav_share) {
+            fragment = new VideoFragment();
+            fm.beginTransaction().replace(R.id.relative_layout_for_fragment, fragment).commit();
+            imageButton.setVisibility(View.INVISIBLE);
 
+            imageButton.setVisibility(View.INVISIBLE);
         } else if (id == R.id.nav_send) {
 
         }

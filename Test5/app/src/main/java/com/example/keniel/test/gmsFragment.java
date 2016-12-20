@@ -40,28 +40,12 @@ import java.util.Map;
  */
 public class gmsFragment extends Fragment implements OnMapReadyCallback{
 
-    private static Double latitude = -1.0;
-    private static Double longitude = 0.0;
+
     Map<String,String> myMap = new HashMap<>();
     public gmsFragment() {
         // Required empty public constructor
     }
 
-
-
-
-    public Double getX(){
-        return latitude;
-    }
-    public Double getY(){
-        return longitude;
-    }
-    public void setStateX(Double s){
-        latitude = s;
-    }
-    public void setStateY(Double s){
-        longitude = s;
-    }
     private RequestQueue requesQueue;
 
     @Override
@@ -80,14 +64,6 @@ public class gmsFragment extends Fragment implements OnMapReadyCallback{
         super.onViewCreated(view, savedInstanceState);
 
         MapFragment fragment = (MapFragment) getChildFragmentManager().findFragmentById(R.id.map);
-        try {
-            Double lat = getArguments().getDouble("Latitude");
-            Double lng = getArguments().getDouble("Longitude");
-            setStateX(lat);
-            setStateY(lng);
-        }catch (Exception e){
-            e.printStackTrace();
-        }
 
 
         fragment.getMapAsync(this);
@@ -99,7 +75,7 @@ public class gmsFragment extends Fragment implements OnMapReadyCallback{
     public void onMapReady(GoogleMap googleMap) {
 
 
-        LatLng marker = new LatLng(getX(), getY());
+        LatLng marker = new LatLng(MainActivity.getX(), MainActivity.getY());
        // LatLng m = new LatLng(getX(), getY());
         googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(marker,13));
         googleMap.addMarker(new MarkerOptions().title("Hello Google Maps").position(marker));

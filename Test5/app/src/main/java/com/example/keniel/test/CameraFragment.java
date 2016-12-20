@@ -1,6 +1,8 @@
 package com.example.keniel.test;
 
 
+import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
@@ -21,11 +23,16 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import org.json.JSONObject;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static android.app.Activity.RESULT_OK;
 import static android.content.Context.LOCATION_SERVICE;
@@ -36,21 +43,26 @@ import static android.provider.MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE;
  * A simple {@link Fragment} subclass.
  */
 public class CameraFragment extends Fragment {
-    Bitmap photo;
+
     Button button ;
     ImageView imageView;
+    final private int CAPTURE_IMAGE = 2;
     View view;
-    private Uri fileuri;
-    Uri selectedImage;
-    private static final int ACTIVITY_START_CAMERA_APP = 0;
-    private ImageView mPhotoCapturedImageView;
-    private String mImageFileLocation = "";
+    String imgPath;
+    ProgressDialog progressDialog;
+    private int PICK_IMAGE_REQUEST = 1;
+    Uri imgUri;
 
-    static final int CAM_REQUEST = 1;
     public CameraFragment() {
         // Required empty public constructor
     }
 
+    private void showFileChooser() {
+        Intent intent = new Intent();
+        intent.setType("image/*");
+        intent.setAction(Intent.ACTION_GET_CONTENT);
+        startActivityForResult(Intent.createChooser(intent, "Select Picture"), PICK_IMAGE_REQUEST);
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -64,75 +76,158 @@ public class CameraFragment extends Fragment {
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
-                Intent callCameraApplicationIntent = new Intent();
-                callCameraApplicationIntent.setAction(MediaStore.ACTION_IMAGE_CAPTURE);
-
+                progressDialog = new ProgressDialog(getActivity());
                 File photoFile = null;
                 try {
                     photoFile = createImageFile();
-
-                } catch (IOException e) {
-                    e.printStackTrace();
+                } catch (IOException ex) {
+                    // Error occurred while creating the File
+                    Log.i("error",ex.getMessage());
                 }
-                callCameraApplicationIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(photoFile));
-
-                startActivityForResult(callCameraApplicationIntent, ACTIVITY_START_CAMERA_APP);
+                // Continue only if the File was successfully created
+                if (photoFile != null) {
+                    final Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                    intent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(photoFile));
+                    startActivityForResult(intent, CAPTURE_IMAGE);
+                }
             }
         });
         return view;
     }
 
+    public Uri setImageUri() {
+        // Store image in dcim
+        File file = new File(Environment.getExternalStorageDirectory() + "/DCIM/", "image" + new Date().getTime() + ".png");
+        this.imgUri = Uri.fromFile(file);
+        this.imgPath = file.getAbsolutePath();
+        return this.imgUri;
+    }
+
+    private File createImageFile() throws IOException {
+        // Create an image file name
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        String imageFileName = "JPEG_" + timeStamp + "_";
+        File storageDir = Environment.getExternalStoragePublicDirectory(
+                Environment.DIRECTORY_PICTURES);
+        File image = File.createTempFile(
+                imageFileName,  /* prefix */
+                ".jpg",         /* suffix */
+                storageDir      /* directory */
+        );
+
+        // Save a file: path for use with ACTION_VIEW intents
+        this.imgPath =  image.getAbsolutePath();
+        return image;
+    }
+
+
+    public String getImagePath() {
+        return this.imgPath;
+    }
+
+
+    public void loadImageFromFile(){
 
 
 
+
+        int targetW = view.getWidth();
+        int targetH = view.getHeight();
+
+        // Get the dimensions of the bitmap
+        BitmapFactory.Options bmOptions = new BitmapFactory.Options();
+        bmOptions.inJustDecodeBounds = true;
+        BitmapFactory.decodeFile(this.imgPath, bmOptions);
+        int photoW = bmOptions.outWidth;
+        int photoH = bmOptions.outHeight;
+
+        // Determine how much to scale down the image
+        int scaleFactor = Math.min(photoW/targetW, photoH/targetH);
+
+        // Decode the image file into a Bitmap sized to fill the View
+        bmOptions.inJustDecodeBounds = false;
+        bmOptions.inSampleSize = scaleFactor;
+        bmOptions.inPurgeable = true;
+
+        Bitmap bitmap = BitmapFactory.decodeFile(this.imgPath, bmOptions);
+        imageView.setImageBitmap(bitmap);
+        //progressDialog.dismiss();
+    }
+
+    public void someMethod()
+    {
+        Map<String, String> params = new HashMap();
+        params.put("content_type", "image");
+        params.put("description", this.imgPath);
+        params.put("lat",MainActivity.getY().toString());
+        params.put("long",MainActivity.getX().toString());
+        JSONObject object = new JSONObject(params);
+
+        NetworkManager.getInstance().somePostRequestReturningString(object, new NetworkManager.SomeCustomListener<String>()
+        {
+            @Override
+            public void getResult(String result)
+            {
+                if (!result.isEmpty())
+                {
+                    progressDialog.dismiss();
+                    //do what you need with the result...
+                }
+            }
+        });
+    }
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if(requestCode == ACTIVITY_START_CAMERA_APP && resultCode == RESULT_OK) {
-            // Toast.makeText(this, "Picture taken successfully", Toast.LENGTH_SHORT).show();
-            // Bundle extras = data.getExtras();
-            // Bitmap photoCapturedBitmap = (Bitmap) extras.get("data");
-            // mPhotoCapturedImageView.setImageBitmap(photoCapturedBitmap);
-            // Bitmap photoCapturedBitmap = BitmapFactory.decodeFile(mImageFileLocation);
-            // mPhotoCapturedImageView.setImageBitmap(photoCapturedBitmap);
-            setReducedImageSize();
+        if (resultCode != Activity.RESULT_CANCELED) {
+            if (requestCode == CAPTURE_IMAGE) {
 
+                progressDialog.setMessage("Uploading Image");
+                progressDialog.show();
+                loadImageFromFile();
+                someMethod();
+
+            } else {
+                super.onActivityResult(requestCode, resultCode, data);
+            }
         }
 
 
+    }
+    public Bitmap decodeFile(String path) {
+        try {
+            // Decode image size
+            BitmapFactory.Options o = new BitmapFactory.Options();
+            o.inJustDecodeBounds = true;
+            BitmapFactory.decodeFile(path, o);
+            // The new size we want to scale to
+            final int REQUIRED_SIZE = 70;
+
+            // Find the correct scale value. It should be the power of 2.
+            int scale = 1;
+            while (o.outWidth / scale / 2 >= REQUIRED_SIZE && o.outHeight / scale / 2 >= REQUIRED_SIZE)
+                scale *= 2;
+
+            // Decode with inSampleSize
+            BitmapFactory.Options o2 = new BitmapFactory.Options();
+            o2.inSampleSize = scale;
+            return BitmapFactory.decodeFile(path, o2);
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
+        return null;
 
     }
-    void setReducedImageSize() {
-        int targetImageViewWidth = imageView.getWidth();
-        int targetImageViewHeight = imageView.getHeight();
 
-        BitmapFactory.Options bmOptions = new BitmapFactory.Options();
-        bmOptions.inJustDecodeBounds = true;
-        Log.i(mImageFileLocation.toString(),"hi");
-        BitmapFactory.decodeFile(mImageFileLocation, bmOptions);
-        int cameraImageWidth = bmOptions.outWidth;
-        int cameraImageHeight = bmOptions.outHeight;
-
-        int scaleFactor = Math.min(cameraImageWidth/targetImageViewWidth, cameraImageHeight/targetImageViewHeight);
-        bmOptions.inSampleSize = scaleFactor;
-        bmOptions.inJustDecodeBounds = false;
-
-        Bitmap photoReducedSizeBitmp = BitmapFactory.decodeFile(mImageFileLocation, bmOptions);
-        imageView.setImageBitmap(photoReducedSizeBitmp);
-
-
-    }
-    File createImageFile() throws IOException {
-
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        String imageFileName = "IMAGE_" + timeStamp + "_";
-        File storageDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
-
-        File image = File.createTempFile(imageFileName,".jpg", storageDirectory);
-        mImageFileLocation = image.getAbsolutePath();
-
-        return image;
-
+    public String getAbsolutePath(Uri uri) {
+        String[] projection = { MediaStore.MediaColumns.DATA };
+        @SuppressWarnings("deprecation")
+        Cursor cursor = getActivity().managedQuery(uri, projection, null, null, null);
+        if (cursor != null) {
+            int column_index = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DATA);
+            cursor.moveToFirst();
+            return cursor.getString(column_index);
+        } else
+            return null;
     }
 
 
