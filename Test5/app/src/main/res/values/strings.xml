@@ -6,7 +6,11 @@
 
     <string name="action_settings">Settings</string>
 
-
+    <string-array name="firetype_array">
+        <item>Residential</item>
+        <item>Bush Fire</item>
+        <item>Forest Fire</item>
+    </string-array>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>

@@ -16,13 +16,15 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 
+
+
 /**
  * A simple {@link Fragment} subclass.
  */
 public class FireLocateFragment extends Fragment implements OnMapReadyCallback {
 
-    Float lat;
-    Float lng;
+    Double lat;
+    Double lng;
     String title;
 
     public FireLocateFragment() {
@@ -34,13 +36,14 @@ public class FireLocateFragment extends Fragment implements OnMapReadyCallback {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
+
         return inflater.inflate(R.layout.fragment_fire_locate, container, false);
     }
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
         LatLng marker = new LatLng(this.lat, this.lng);
-        googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(marker,13));
+        googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(marker,10));
         googleMap.addMarker(new MarkerOptions().title(this.title).position(marker));
 
     }
@@ -51,8 +54,8 @@ public class FireLocateFragment extends Fragment implements OnMapReadyCallback {
         MapFragment fragment = (MapFragment) getChildFragmentManager().findFragmentById(R.id.locatemap);
         try {
             this.title = getArguments().getString("title");
-            this.lat = getArguments().getFloat("Latitude");
-            this.lng = getArguments().getFloat("Longitude");
+            this.lat = getArguments().getDouble("Latitude");
+            this.lng = getArguments().getDouble("Longitude");
             //setStateX(Double.parseDouble(lat));
             //setStateY(Double.parseDouble(lng));
         }catch (Exception e){

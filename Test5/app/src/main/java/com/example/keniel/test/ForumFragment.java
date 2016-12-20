@@ -2,6 +2,7 @@ package com.example.keniel.test;
 
 
 import android.app.ListFragment;
+import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -11,6 +12,10 @@ import android.os.Bundle;
 import android.app.Fragment;
 import android.support.annotation.NonNull;
 import android.app.FragmentManager;
+import android.support.design.widget.FloatingActionButton;
+import android.support.v7.app.AlertDialog;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -47,194 +52,115 @@ import java.util.Map;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class ForumFragment extends Fragment implements AddDialog.EditNameDialogListener{
+public class ForumFragment extends Fragment implements AddDialog.EditNameDialogListener {
 
-    private List<ForumItems> items = new ArrayList<>();
-    private BroadcastReceiver broadcastReceiver3;
+    private static final String URL_Data = "http://138.197.79.246/forums";
 
-
-    public Double getY() {
-        return y;
-    }
-
-    public void setY(Double y) {
-        this.y = y;
-    }
-
-    public Double getX() {
-        return x;
-    }
-
-    public void setX(Double x) {
-        this.x = x;
-    }
-
-    private Double x,y;
-
+    private RecyclerView recyclerView;
+    private RecyclerView.Adapter adapter;
+    private List<ForumItems> fitems;
+    FloatingActionButton fab;
     View rootview;
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+    public View onCreateView(final LayoutInflater inflater, final ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
 
        rootview = inflater.inflate(R.layout.fragment_forum, container, false);
+        recyclerView = (RecyclerView) rootview.findViewById(R.id.recyclerview);
+        recyclerView.setHasFixedSize(true);
+        recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
 
-        items.add(new ForumItems("g","g","ii","f",-45.2,034.0));
+        fitems = new ArrayList<>();
 
-        engine();
-        addClicker();
-        if (broadcastReceiver3 == null){
-            broadcastReceiver3 = new BroadcastReceiver() {
-                @Override
-                public void onReceive(Context context, Intent intent) {
-                    Bundle bundle = intent.getExtras();
-                    setX(bundle.getDouble("lat"));
-                    setY(bundle.getDouble("lng"));
-                }
-            };
-        }
+        loadRecyclerViewData();
+        fab = (FloatingActionButton) rootview.findViewById(R.id.fab);
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                AddDialog dialog = new AddDialog();
+                dialog.setTargetFragment(ForumFragment.this, 0);
+                dialog.show(getFragmentManager(),"fragment_add");
 
+            }
+        });
         return rootview;
 
     }
-    private void engine(){
-        RequestQueue rQueue = Volley.newRequestQueue(getActivity());
-        Log.i("ffdfd","gfgththhh");
-        JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET,"http://138.197.79.246/forums",null,
-                new Response.Listener<JSONObject>() {
-                    @Override
-                    public void onResponse(JSONObject response) {
-                        try {
-                            JSONArray jsonArray = response.getJSONArray("forumitems");
-                            for (int i=0; i<jsonArray.length(); i++){
-                                JSONObject temp = jsonArray.getJSONObject(i);
-                                Log.i("here","heerer");
-                                String title = temp.getString("title");
-                                String content = temp.getString("description");
-                                String date = temp.getString("created_at");
-                                String lat = temp.getString("lat");
-                                String lng = temp.getString("long");
-                                String type = temp.getString("type");
-                                items.add(new ForumItems(title,content,type,date,Double.parseDouble(lat),Double.parseDouble(lng)));
-                                System.out.println(items);
-                                Log.i("g",items.toString());
-                            }
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }
-                ,new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                Log.i("error",error.toString());
-            }
 
-        });
+    private void loadRecyclerViewData(){
+        final ProgressDialog progressDialog = new ProgressDialog(getActivity());
+        progressDialog.setMessage("Loading Data.....");
+        progressDialog.show();
 
-        request.setRetryPolicy(new DefaultRetryPolicy(
-                10000,DefaultRetryPolicy.DEFAULT_MAX_RETRIES,DefaultRetryPolicy.DEFAULT_BACKOFF_MULT
-        ));
-        rQueue.add(request);
-
-
-        ArrayAdapter<ForumItems> adapter = new customAdapter();
-
-        ListView listview = (ListView) rootview.findViewById(R.id.list_view);
-
-        listview.setAdapter(adapter);
-
-
-
-    }
-
-
-    @Override
-    public void onFinishEditDialog(final String t, final String m, final String s) {
-
-        String url = "http://localhost:8081/test";
-        StringRequest postRequest = new StringRequest(Request.Method.POST, url,
+        StringRequest stringRequest = new StringRequest(Request.Method.GET,
+                URL_Data,
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
-                        Log.d("Response", response);
+                        try {
+                            JSONArray array = new JSONArray(response);
+
+                            for (int i=0;i< array.length(); i++){
+                                JSONObject o = array.getJSONObject(i);
+                                ForumItems fitem = new ForumItems(
+                                        o.getString("title"),
+                                        o.getString("description"),
+                                        o.getString("fire_type"),
+                                        o.getString("created_at"),
+                                        o.getDouble("lat"),
+                                        o.getDouble("long")
+                                );
+                                fitems.add(fitem);
+                            }
+
+                            adapter = new RecyclerAdapter(fitems,getActivity());
+                            recyclerView.setAdapter(adapter);
+                            progressDialog.dismiss();
+
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+
+                        adapter.notifyDataSetChanged();
+
                     }
                 }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-                Log.d("Error.Response", error.toString());
+                progressDialog.dismiss();
+                Toast.makeText(getActivity(), error.getMessage(),Toast.LENGTH_LONG).show();
             }
-        }
-        ){
-            @Override
-            protected Map<String, String> getParams() throws AuthFailureError {
-                Map<String, String>  params = new HashMap<String, String>();
-                params.put("title", t);
-                params.put("message", m);
-                params.put("fire_type", s);
-                params.put("latitude",getX().toString());
-                params.put("longitude",getY().toString());
-                params.put("date","23/11/1995");
-                return  params;
-            }
-        };
+        });
+
+        RequestQueue requestQ = Volley.newRequestQueue(getActivity());
+        requestQ.add(stringRequest);
     }
 
-    private void addClicker(){
-        ListView listview = (ListView) rootview.findViewById(R.id.list_view);
-        listview.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 
+    @Override
+    public void onFinishEditDialog(String t, String m, String s, Double lat, Double lng) {
+        Map<String, String> params = new HashMap();
+        params.put("title", t);
+        params.put("description", m);
+        params.put("fire_type", s);
+        params.put("lat",lat.toString());
+        params.put("long",lng.toString());
+        JSONObject object = new JSONObject(params);
+
+        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.POST, URL_Data, object, new Response.Listener<JSONObject>() {
             @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                ForumItems forumitem = items.get(position);
-                Bundle data = new Bundle();
-                data.putString("title",forumitem.getTitle());
-                data.putDouble("latitude", forumitem.getLat());
-                data.putDouble("longitude",forumitem.getLng());
-                FireLocateFragment fragment = new FireLocateFragment();
-                fragment.setArguments(data);
-                FragmentManager fragmentManager = getFragmentManager();
-                fragmentManager.beginTransaction().replace(R.id.forumfragment, fragment).commit();
-
+            public void onResponse(JSONObject response) {
+                Log.i("response",response.toString());
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
 
             }
         });
+        RequestQueue rqueue = Volley.newRequestQueue(getActivity());
+        rqueue.add(jsonObjectRequest);
     }
-
-    public void addMethod(View v){
-        AddDialog dialog = new AddDialog();
-        dialog.setTargetFragment(ForumFragment.this,300);
-        dialog.show(getFragmentManager(), "addDialog");
-    }
-
-
-
-
-    private class customAdapter extends ArrayAdapter<ForumItems>{
-
-        public customAdapter() {
-            super(getActivity(), R.layout.item, items);
-        }
-
-        @Override
-        public View getView(int position, View convertview , @NonNull ViewGroup parent){
-
-            if (convertview == null){
-                Log.i("error","errrrroor");
-                convertview= getActivity().getLayoutInflater().inflate(R.layout.item,parent,false);
-
-            }
-
-            ForumItems forumitem = items.get(position);
-
-
-            TextView textView = (TextView) convertview.findViewById(R.id.content);
-
-            textView.setText(forumitem.getContent());
-
-            return convertview;
-        }
-    }
-
 }
 
