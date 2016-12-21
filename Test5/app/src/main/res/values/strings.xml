@@ -10,6 +10,9 @@
         <item>Residential</item>
         <item>Bush Fire</item>
         <item>Forest Fire</item>
+        <item>Comercial Fire</item>
+        <item>School Fire</item>
+        <item>Vehicular Fire</item>
     </string-array>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>

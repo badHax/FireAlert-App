@@ -4,6 +4,7 @@ package com.example.keniel.test;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -53,9 +54,15 @@ public class FireLocateFragment extends Fragment implements OnMapReadyCallback {
         super.onViewCreated(view, savedInstanceState);
         MapFragment fragment = (MapFragment) getChildFragmentManager().findFragmentById(R.id.locatemap);
         try {
-            this.title = getArguments().getString("title");
-            this.lat = getArguments().getDouble("Latitude");
-            this.lng = getArguments().getDouble("Longitude");
+            Bundle bundle = this.getArguments();
+
+            if(bundle != null){
+                this.title = bundle.getString("title");
+                this.lat = bundle.getDouble("latitude");
+                this.lng = bundle.getDouble("longitude");
+                Log.i("th",this.title.toString());
+            }
+
             //setStateX(Double.parseDouble(lat));
             //setStateY(Double.parseDouble(lng));
         }catch (Exception e){

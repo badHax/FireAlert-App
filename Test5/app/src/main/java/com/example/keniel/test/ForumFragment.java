@@ -10,6 +10,7 @@ import android.content.IntentFilter;
 import android.net.Uri;
 import android.os.Bundle;
 import android.app.Fragment;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.app.FragmentManager;
 import android.support.design.widget.FloatingActionButton;
@@ -116,7 +117,11 @@ public class ForumFragment extends Fragment implements AddDialog.EditNameDialogL
 
                             adapter = new RecyclerAdapter(fitems,getActivity());
                             recyclerView.setAdapter(adapter);
-                            progressDialog.dismiss();
+                            Handler handler = new Handler();
+                            handler.postDelayed(new Runnable() {
+                                public void run() {
+                                    progressDialog.dismiss();
+                                }}, 3000);
 
                         } catch (JSONException e) {
                             e.printStackTrace();

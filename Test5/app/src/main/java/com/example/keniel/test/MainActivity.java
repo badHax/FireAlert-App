@@ -2,14 +2,18 @@ package com.example.keniel.test;
 
 import android.*;
 import android.Manifest;
+import android.app.Activity;
 import android.app.Fragment;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.media.MediaPlayer;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.provider.ContactsContract;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
@@ -30,6 +34,7 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import android.os.Vibrator;
 import org.json.JSONObject;
 
 import java.util.HashMap;
@@ -146,6 +151,11 @@ public class MainActivity extends AppCompatActivity
                     {
                         if (!result.isEmpty())
                         {
+
+                            Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                            // Vibrate for 500 milliseconds
+                            v.vibrate(500);
+                            //buttonpressed();
                             Toast.makeText(getApplicationContext(),"Your alert has been made and recieved",Toast.LENGTH_LONG).show();
 
                             //do what you need with the result...
@@ -168,6 +178,22 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
+    public void buttonpressed(){
+        imageButton.setColorFilter(Color.RED);
+        new CountDownTimer(5000, 50) {
+
+            @Override
+            public void onTick(long arg0) {
+                // TODO Auto-generated method stub
+
+            }
+
+            @Override
+            public void onFinish() {
+                imageButton.setColorFilter(Color.BLUE);
+            }
+        }.start();
+    }
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -230,31 +256,27 @@ public class MainActivity extends AppCompatActivity
 
         if (id == R.id.nav_camera) {
             // Handle the camera action
-            fragment = new gmsFragment();
-            fm.beginTransaction().replace(R.id.relative_layout_for_fragment, fragment).commit();
-            imageButton.setVisibility(View.INVISIBLE);
-        } else if (id == R.id.nav_gallery) {
-            fragment = new ForumFragment();
-            fm.beginTransaction().replace(R.id.relative_layout_for_fragment, fragment).commit();
-            imageButton.setVisibility(View.INVISIBLE);
-
-        } else if (id == R.id.nav_slideshow) {
             fragment = new CameraFragment();
             fm.beginTransaction().replace(R.id.relative_layout_for_fragment, fragment).commit();
             imageButton.setVisibility(View.INVISIBLE);
-
-        } else if (id == R.id.nav_manage) {
-            fragment = new AudioFragment();
-            fm.beginTransaction().replace(R.id.relative_layout_for_fragment, fragment).commit();
+        } else if (id == R.id.nav_record) {
+            Intent i = new Intent(this, Recorder.class);
+            startActivity(i);
             imageButton.setVisibility(View.INVISIBLE);
-        } else if (id == R.id.nav_share) {
+
+        } else if (id == R.id.nav_video) {
             fragment = new VideoFragment();
             fm.beginTransaction().replace(R.id.relative_layout_for_fragment, fragment).commit();
             imageButton.setVisibility(View.INVISIBLE);
 
+        } else if (id == R.id.nav_forum) {
+            fragment = new ForumFragment();
+            fm.beginTransaction().replace(R.id.relative_layout_for_fragment, fragment).commit();
             imageButton.setVisibility(View.INVISIBLE);
-        } else if (id == R.id.nav_send) {
-
+        } else if (id == R.id.nav_station) {
+            fragment = new gmsFragment();
+            fm.beginTransaction().replace(R.id.relative_layout_for_fragment, fragment).commit();
+            imageButton.setVisibility(View.INVISIBLE);
         }
         setTitle(item.getTitle());
 

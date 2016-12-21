@@ -2,6 +2,8 @@ package com.example.keniel.test;
 
 
 import android.app.Activity;
+import android.app.FragmentManager;
+import android.app.FragmentTransaction;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
@@ -13,6 +15,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 import android.provider.MediaStore;
 import android.app.Fragment;
 import android.util.Log;
@@ -72,27 +75,27 @@ public class CameraFragment extends Fragment {
         view = inflater.inflate(R.layout.fragment_camera, container, false);
         button = (Button) view.findViewById(R.id.picturebutton);
         imageView = (ImageView) view.findViewById(R.id.picture);
+        startCamera();
 
-        button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                progressDialog = new ProgressDialog(getActivity());
-                File photoFile = null;
-                try {
-                    photoFile = createImageFile();
-                } catch (IOException ex) {
-                    // Error occurred while creating the File
-                    Log.i("error",ex.getMessage());
-                }
-                // Continue only if the File was successfully created
-                if (photoFile != null) {
-                    final Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                    intent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(photoFile));
-                    startActivityForResult(intent, CAPTURE_IMAGE);
-                }
-            }
-        });
         return view;
+    }
+
+    public void startCamera(){
+        progressDialog = new ProgressDialog(getActivity());
+        File photoFile = null;
+        try {
+            photoFile = createImageFile();
+        } catch (IOException ex) {
+            // Error occurred while creating the File
+            Log.i("error",ex.getMessage());
+        }
+        // Continue only if the File was successfully created
+        if (photoFile != null) {
+            final Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+            intent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(photoFile));
+            startActivityForResult(intent, CAPTURE_IMAGE);
+        }
+
     }
 
     public Uri setImageUri() {
@@ -170,12 +173,21 @@ public class CameraFragment extends Fragment {
             {
                 if (!result.isEmpty())
                 {
-                    progressDialog.dismiss();
+                    Handler handler = new Handler();
+                    handler.postDelayed(new Runnable() {
+                        public void run() {
+                            progressDialog.dismiss();
+                        }}, 3000);
+
                     //do what you need with the result...
                 }
             }
         });
     }
+
+
+
+
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (resultCode != Activity.RESULT_CANCELED) {
@@ -185,12 +197,21 @@ public class CameraFragment extends Fragment {
                 progressDialog.show();
                 loadImageFromFile();
                 someMethod();
+                moveToNewActivity();
 
+
+                Toast.makeText(getActivity(), "Image Sent and Received by FireStation", Toast.LENGTH_SHORT).show();
             } else {
                 super.onActivityResult(requestCode, resultCode, data);
             }
         }
 
+
+    }
+    private void moveToNewActivity() {
+        Intent i = new Intent(getActivity(), MainActivity.class);
+        startActivity(i);
+        ((Activity) getActivity()).overridePendingTransition(0,0);
 
     }
     public Bitmap decodeFile(String path) {
